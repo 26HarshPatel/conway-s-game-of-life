@@ -1,113 +1,163 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+
+const resolution = 10;
+const ROWS = 30;
+const COLS = 30;
+
+function buildCanvasGrid(random = false) {
+  if (random) {
+    return new Array(COLS)
+      .fill(null)
+      .map(() =>
+        new Array(ROWS).fill(null).map(() => Math.floor(Math.random() * 2))
+      );
+  }
+  return new Array(COLS)
+    .fill(null)
+    .map(() => new Array(ROWS).fill(null).map(() => 0));
+}
+
+function getLivingNeighbors(grid, col, row) {
+  const neighbours = [
+    [col - 1, row - 1],
+    [col - 1, row],
+    [col - 1, row + 1],
+    [col, row - 1],
+    // [col, row],
+    [col, row + 1],
+    [col + 1, row - 1],
+    [col + 1, row],
+    [col + 1, row + 1],
+  ];
+
+  return neighbours.reduce((countNeighbours, [innerCol, innerRow]) => {
+    if (innerCol >= 0 && innerCol < COLS && innerRow >= 0 && innerRow < ROWS) {
+      countNeighbours += grid[innerCol][innerRow];
+    }
+    return countNeighbours;
+  }, 0);
+}
+
+function nextGenerationGrid(grid) {
+  const nextGenGrid = grid.map((arr) => [...arr]);
+  for (let col = 0; col < COLS; col++) {
+    for (let row = 0; row < ROWS; row++) {
+      const neighbors = getLivingNeighbors(grid, col, row);
+      const cell = grid[col][row];
+
+      if (cell === 0 && neighbors === 3) {
+        nextGenGrid[col][row] = 1;
+      } else if (cell === 1 && (neighbors === 2 || neighbors === 3)) {
+        nextGenGrid[col][row] = 1;
+      } else if (neighbors < 2 || neighbors >= 4) {
+        nextGenGrid[col][row] = 0;
+      }
+    }
+  }
+  return nextGenGrid;
+}
 
 export default function Home() {
+  const [grid, setGrid] = useState(buildCanvasGrid());
+  const [isRunning, setIsRunning] = useState(false);
+  const [intervalId, setIntervalId] = useState(null);
+
+  function startGame() {
+    setIsRunning(true);
+    const interval = setInterval(() => {
+      setGrid((prevValue) => nextGenerationGrid(prevValue));
+    }, 500);
+    setIntervalId(interval);
+  }
+
+  function stopGame() {
+    setIsRunning(false);
+    if (intervalId) clearInterval(intervalId);
+  }
+
+  function resetGame() {
+    stopGame();
+    setGrid(buildCanvasGrid());
+  }
+  function handleSetRandomPosition() {
+    setGrid(buildCanvasGrid(true));
+    startGame();
+  }
+
+  function handleCanvasClick(colIndex, rowIndex) {
+    setGrid((prevGrid) => {
+      const newGrid = prevGrid.map((arr) => [...arr]);
+      newGrid[colIndex][rowIndex] = prevGrid[colIndex][rowIndex] ? 0 : 1;
+      return newGrid;
+    });
+  }
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.js</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    <div className="flex h-screen w-screen items-center justify-center bg-slate-200">
+      <div className="headerDiv h-max w-max rounded-md bg-slate-100 p-7 shadow-lg shadow-gray-700">
+        <div className="flex flex-col gap-1">
+          <div className="text-sm">Welcome to the world of...</div>
+          <h2 className="text-2xl font-semibold">{`CONWAY'S GAME OF LIFE`}</h2>
+          <hr />
+        </div>
+        <div className="canvasDiv">
+          <div className="gameBox flex justify-evenly gap-0 border-black border-2">
+            {grid.map((col, colIndex) => {
+              return (
+                <div key={colIndex}>
+                  {col.map((row, rowIndex) => {
+                    return (
+                      <div
+                        key={rowIndex}
+                        style={{
+                          width: `${resolution}PX`,
+                          height: `${resolution}PX`,
+                          // padding: "1px",
+                        }}
+                        className={`border border-black`}
+                        onClick={() => handleCanvasClick(colIndex, rowIndex)}
+                      >
+                        <div
+                          className={`${
+                            grid[colIndex][rowIndex] === 0
+                              ? "bg-white"
+                              : "bg-black"
+                          } h-full w-full`}
+                        ></div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-4 flex justify-between">
+            {!isRunning ? (
+              <button onClick={startGame} className="cursor-pointer text-sm">
+                Start Game
+              </button>
+            ) : (
+              <button onClick={stopGame} className="cursor-pointer text-sm">
+                Stop Game
+              </button>
+            )}
+            {!isRunning ? (
+              <button
+                onClick={handleSetRandomPosition}
+                className="cursor-pointer text-sm"
+              >
+                Start With Random Position
+              </button>
+            ) : (
+              <button onClick={resetGame} className="cursor-pointer text-sm">
+                Stop & Reset Game
+              </button>
+            )}
+          </div>
         </div>
       </div>
-
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-full sm:before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full sm:after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800 hover:dark:bg-opacity-30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50 text-balance`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+    </div>
   );
 }
