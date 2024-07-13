@@ -117,14 +117,12 @@ export default function Home() {
                           // padding: "1px",
                         }}
                         className={`${
-                            grid[colIndex][rowIndex] === 0
-                              ? "bg-white"
-                              : "bg-black"
-                          } border border-black`}
+                          grid[colIndex][rowIndex] === 0
+                            ? "bg-white"
+                            : "bg-black"
+                        } border border-black`}
                         onClick={() => handleCanvasClick(colIndex, rowIndex)}
-                      >
-                      
-                      </div>
+                      ></div>
                     );
                   })}
                 </div>
