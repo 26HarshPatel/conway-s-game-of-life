@@ -116,17 +116,13 @@ export default function Home() {
                           height: `${resolution}PX`,
                           // padding: "1px",
                         }}
-                        className={`border border-black`}
+                        className={`${
+                          grid[colIndex][rowIndex] === 0
+                            ? "bg-white"
+                            : "bg-black"
+                        } border border-black`}
                         onClick={() => handleCanvasClick(colIndex, rowIndex)}
-                      >
-                        <div
-                          className={`${
-                            grid[colIndex][rowIndex] === 0
-                              ? "bg-white"
-                              : "bg-black"
-                          } h-full w-full`}
-                        ></div>
-                      </div>
+                      ></div>
                     );
                   })}
                 </div>
