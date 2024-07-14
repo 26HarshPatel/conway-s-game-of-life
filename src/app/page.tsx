@@ -22,32 +22,23 @@ function buildCanvasGrid(random = false): Grid {
 }
 
 function getLivingNeighbors(grid: Grid, col: number, row: number) {
-  const neighbours: number[][] = [
+  const neighbors: [number, number][] = [
     [col - 1, row - 1],
     [col - 1, row],
     [col - 1, row + 1],
     [col, row - 1],
-    // [col, row],
     [col, row + 1],
     [col + 1, row - 1],
     [col + 1, row],
     [col + 1, row + 1],
   ];
 
-  return neighbours.reduce(
-    (countNeighbours: number, [innerCol, innerRow]: number[]) => {
-      if (
-        innerCol >= 0 &&
-        innerCol < COLS &&
-        innerRow >= 0 &&
-        innerRow < ROWS
-      ) {
-        countNeighbours += grid[innerCol][innerRow];
-      }
-      return countNeighbours;
-    },
-    0,
-  );
+  return neighbors.reduce((countNeighbours: number, [innerCol, innerRow]) => {
+    if (innerCol >= 0 && innerCol < COLS && innerRow >= 0 && innerRow < ROWS) {
+      countNeighbours += grid[innerCol][innerRow];
+    }
+    return countNeighbours;
+  }, 0);
 }
 
 function nextGenerationGrid(grid: Grid) {
@@ -72,7 +63,7 @@ function nextGenerationGrid(grid: Grid) {
 export default function HomePage() {
   const [grid, setGrid] = useState<Grid>(buildCanvasGrid());
   const [isRunning, setIsRunning] = useState<boolean>(false);
-  const [intervalId, setIntervalId] = useState(null);
+  const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null);
 
   function startGame() {
     setIsRunning(true);
@@ -84,13 +75,17 @@ export default function HomePage() {
 
   function stopGame() {
     setIsRunning(false);
-    if (intervalId) clearInterval(intervalId);
+    if (intervalId) {
+      clearInterval(intervalId);
+      setIntervalId(null);
+    }
   }
 
   function resetGame() {
     stopGame();
     setGrid(buildCanvasGrid());
   }
+
   function handleSetRandomPosition() {
     setGrid(buildCanvasGrid(true));
     startGame();
@@ -122,9 +117,8 @@ export default function HomePage() {
                       <div
                         key={rowIndex}
                         style={{
-                          width: `${resolution}PX`,
-                          height: `${resolution}PX`,
-                          // padding: "1px",
+                          width: `${resolution}px`,
+                          height: `${resolution}px`,
                         }}
                         className={`${
                           grid[colIndex][rowIndex] === 0
