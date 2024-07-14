@@ -120,8 +120,8 @@ export default function HomePage() {
   }
 
   return (
-    <div className="flex h-screen w-screen items-center justify-center bg-slate-200">
-      <div className="headerDiv h-max w-max rounded-md bg-slate-100 p-7 shadow-lg shadow-gray-700">
+    <div className="flex h-screen w-screen items-center justify-center bg-slate-100">
+      <div className="headerDiv h-max w-max rounded-md bg-slate-50 p-7 shadow-lg shadow-gray-700">
         <div className="flex flex-col gap-1">
           <div className="text-sm">Welcome to the world of...</div>
           <h2 className="text-2xl font-semibold">{`CONWAY'S GAME OF LIFE`}</h2>
