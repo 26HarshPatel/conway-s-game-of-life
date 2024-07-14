@@ -5,23 +5,33 @@ import { useState } from "react";
 const resolution = 10;
 const ROWS = 30;
 const COLS = 30;
+const singleRowArray = new Array(30).fill(0);
 
-type Grid = number[][];
+type FixedLengthArray<T, N extends number> = N extends N
+  ? number extends N
+    ? T[]
+    : _FixedLengthArray<T, N, []>
+  : never;
+type _FixedLengthArray<
+  T,
+  N extends number,
+  R extends unknown[],
+> = R["length"] extends N ? R : _FixedLengthArray<T, N, [T, ...R]>;
+
+type Grid = FixedLengthArray<FixedLengthArray<number, 30>, 30>;
 
 function buildCanvasGrid(random = false): Grid {
-  if (random) {
-    return new Array(COLS)
-      .fill(null)
-      .map(() =>
-        new Array(ROWS).fill(null).map(() => Math.floor(Math.random() * 2)),
-      );
-  }
-  return new Array(COLS)
+  const newGrid = new Array(COLS)
     .fill(null)
-    .map(() => new Array(ROWS).fill(null).map(() => 0));
+    .map(() =>
+      new Array(ROWS)
+        .fill(null)
+        .map(() => (random ? Math.floor(Math.random() * 2) : 0)),
+    ) as Grid;
+  return newGrid;
 }
 
-function getLivingNeighbors(grid: Grid, col: number, row: number) {
+function getLivingNeighbors(grid: Grid, col: number, row: number): number {
   const neighbors: [number, number][] = [
     [col - 1, row - 1],
     [col - 1, row],
@@ -34,26 +44,34 @@ function getLivingNeighbors(grid: Grid, col: number, row: number) {
   ];
 
   return neighbors.reduce((countNeighbours: number, [innerCol, innerRow]) => {
-    if (innerCol >= 0 && innerCol < COLS && innerRow >= 0 && innerRow < ROWS) {
+    if (
+      innerCol >= 0 &&
+      innerCol < COLS &&
+      innerRow >= 0 &&
+      innerRow < ROWS &&
+      grid[innerCol]?.[innerRow] !== undefined
+    ) {
       countNeighbours += grid[innerCol][innerRow];
     }
     return countNeighbours;
   }, 0);
 }
 
-function nextGenerationGrid(grid: Grid) {
-  const nextGenGrid: Grid = grid.map((arr) => [...arr]);
+function nextGenerationGrid(grid: Grid): Grid {
+  const nextGenGrid: Grid = grid.map((arr) => [...arr]) as Grid;
+
   for (let col = 0; col < COLS; col++) {
     for (let row = 0; row < ROWS; row++) {
       const neighbors = getLivingNeighbors(grid, col, row);
-      const cell = grid[col][row];
+      const cell = grid[col]?.[row];
+      const fullRow = nextGenGrid[col] ?? singleRowArray;
 
       if (cell === 0 && neighbors === 3) {
-        nextGenGrid[col][row] = 1;
+        fullRow[row] = 1;
       } else if (cell === 1 && (neighbors === 2 || neighbors === 3)) {
-        nextGenGrid[col][row] = 1;
+        fullRow[row] = 1;
       } else if (neighbors < 2 || neighbors >= 4) {
-        nextGenGrid[col][row] = 0;
+        fullRow[row] = 0;
       }
     }
   }
@@ -93,8 +111,10 @@ export default function HomePage() {
 
   function handleCanvasClick(colIndex: number, rowIndex: number) {
     setGrid((prevGrid) => {
-      const newGrid = prevGrid.map((arr) => [...arr]);
-      newGrid[colIndex][rowIndex] = prevGrid[colIndex][rowIndex] ? 0 : 1;
+      const newGrid = prevGrid.map((arr) => [...arr]) as Grid;
+      if (newGrid[colIndex]?.[rowIndex] !== undefined) {
+        newGrid[colIndex][rowIndex] = prevGrid[colIndex]?.[rowIndex] ? 0 : 1;
+      }
       return newGrid;
     });
   }
@@ -121,7 +141,7 @@ export default function HomePage() {
                           height: `${resolution}px`,
                         }}
                         className={`${
-                          grid[colIndex][rowIndex] === 0
+                          grid[colIndex]?.[rowIndex] === 0
                             ? "bg-white"
                             : "bg-black"
                         } border border-black`}
